@@ -5,7 +5,8 @@ RUN apk add --update \
   openssh \
   perl \
   bash \
-&& rm -rf /var/cache/apk/*
+&& rm -rf /var/cache/apk/* \
+&& mkdir -p /opt/ids
 
 EXPOSE 22
 
