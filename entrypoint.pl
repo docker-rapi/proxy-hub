@@ -19,6 +19,7 @@ my $client_ids;
 my $client_id_dir = '/opt/ids';
 
 my $cmd_dir = '/var/run/proxy-hub';
+qx|rm -rf $cmd_dir| if (-d $cmd_dir && $$ == 1);
 die "already running! ($cmd_dir/ exists)" if (-d $cmd_dir);
 mkdir $cmd_dir;
 
