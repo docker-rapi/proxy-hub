@@ -18,8 +18,13 @@ for my $sig (@exit_sigs) {
 my $client_ids;
 my $client_id_dir = '/opt/ids';
 
+my $work_ids = '/var/ids';
 my $cmd_dir = '/var/run/proxy-hub';
-qx|rm -rf $cmd_dir| if (-d $cmd_dir && $$ == 1);
+if($$ == 1) {
+  qx|rm -rf $cmd_dir|  if (-d $cmd_dir);
+  qx|rm -rf $work_ids| if (-d $work_ids);
+}
+
 die "already running! ($cmd_dir/ exists)" if (-d $cmd_dir);
 mkdir $cmd_dir;
 
@@ -144,6 +149,7 @@ sub _fork_remote_ssh_tunnel {
     '-oPasswordAuthentication=no',
     '-oStrictHostKeyChecking=no',
     '-oAddressFamily=inet', 
+    '-oServerAliveInterval=240',
     '-p', $port,
     ( map { ('-i', $_) } @$client_ids ),
     '-L', join(':','*',$local_port,$farhost,$remote_port),'-N',
@@ -160,7 +166,6 @@ sub _find_private_id_files {
   my $dir = shift;
   die "'$dir' not a directory" unless (-d $dir);
   
-  my $work_ids = '/var/ids';
   die "Work ids directory '$work_ids' shouldn't already exist, but does" if (-e $work_ids);
   
   my @cmds = (
