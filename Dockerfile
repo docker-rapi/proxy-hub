@@ -8,8 +8,6 @@ RUN apk add --update \
 && rm -rf /var/cache/apk/* \
 && mkdir -p /opt/ids
 
-EXPOSE 22
-
 # env flag used by CMD script to prevent running except from here
 ENV RAPI_PROXY_HUB_DOCKERIZED 1
 

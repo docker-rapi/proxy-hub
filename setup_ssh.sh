@@ -17,4 +17,15 @@ if [ $RAPI_PROXY_HUB_DOCKERIZED ] && [ ! -d /root/.ssh ]; then
   echo "$known_hostname $(cat /etc/ssh/ssh_host_ed25519_key.pub)" >> /root/.ssh/known_hosts
   
   echo -e "\n\nGatewayPorts yes" >> /etc/ssh/sshd_config
+  
+  echo "Host *" > /root/.ssh/config
+  echo "   PasswordAuthentication no" >> /root/.ssh/config
+  echo "   StrictHostKeyChecking no"  >> /root/.ssh/config
+  echo "   AddressFamily inet"        >> /root/.ssh/config
+  echo "   ServerAliveInterval 240"   >> /root/.ssh/config
+  echo "   ExitOnForwardFailure yes"  >> /root/.ssh/config
+  
+  chmod 700 /root/.ssh
+  chmod 600 /root/.ssh/*
+  
 fi

@@ -28,6 +28,8 @@ if($$ == 1) {
 die "already running! ($cmd_dir/ exists)" if (-d $cmd_dir);
 mkdir $cmd_dir;
 
+qx|/setup_ssh.sh 1>&2|;
+
 # This will also fork and start any remote tunnels:
 my @ssh_cmd = &_get_ssh_cmd(@ARGV);
 
@@ -35,9 +37,9 @@ my @ssh_cmd = &_get_ssh_cmd(@ARGV);
 # ssh server and local forward commands
 if(scalar(@ssh_cmd) > 0) {
 
-  qx|/setup_ssh.sh 1>&2|;
-
-  fork || &_loop_fork_exec([qw|/usr/sbin/sshd -D -d|]);
+  my @sshd_cmd = qw|/usr/sbin/sshd -D|;
+  push @sshd_cmd, '-d' if ($ENV{DEBUG});
+  fork || &_loop_fork_exec([@sshd_cmd]);
   fork || &_loop_fork_exec([@ssh_cmd]);
 
   sleep 1;
@@ -145,12 +147,7 @@ sub _fork_remote_ssh_tunnel {
   die "bad remote ssh host '$host' (for '$host_spec')" if ($host && ! &_valid_host($host));
   
   my @cmd = (
-    'ssh', 
-    '-oPasswordAuthentication=no',
-    '-oStrictHostKeyChecking=no',
-    '-oAddressFamily=inet', 
-    '-oServerAliveInterval=240',
-    '-p', $port,
+    'ssh','-p', $port, ($ENV{DEBUG} ? ('-vv') : ()),
     ( map { ('-i', $_) } @$client_ids ),
     '-L', join(':','*',$local_port,$farhost,$remote_port),'-N',
     join('@',$user,$host)

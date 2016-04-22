@@ -141,3 +141,8 @@ we mapped locally on ```2222``` in the previous remote proxy argument. The tunne
 all tunnels continuously try to up themselves in a loop, it doesn't matter what order this 
 happens in.
 
+## Environment Variables
+
+### DEBUG
+
+If set to true, the internal ssh commands will be run with debug messages enabled.
