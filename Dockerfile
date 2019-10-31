@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:3.10
 MAINTAINER Henry Van Styn <vanstyn@cpan.org>
 
 RUN apk add --update \

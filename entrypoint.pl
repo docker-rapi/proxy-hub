@@ -38,7 +38,7 @@ my @ssh_cmd = &_get_ssh_cmd(@ARGV);
 if(scalar(@ssh_cmd) > 0) {
 
   my @sshd_cmd = qw|/usr/sbin/sshd -D|;
-  push @sshd_cmd, '-d' if ($ENV{DEBUG});
+  push @sshd_cmd, '-d' if ($ENV{DEBUG} || $ENV{RAPI_PROXY_HUB_DEBUG_LEVEL});
   fork || &_loop_fork_exec([@sshd_cmd]);
   fork || &_loop_fork_exec([@ssh_cmd]);
 
@@ -74,6 +74,19 @@ sub _loop_fork_exec {
   }
 }
 
+sub _get_dash_v_arg {
+  my $lvl = exists $ENV{RAPI_PROXY_HUB_DEBUG_LEVEL}
+    ? $ENV{RAPI_PROXY_HUB_DEBUG_LEVEL} 
+    : $ENV{DEBUG} ? 1 : 0;
+  
+  unless ($lvl =~ /^\d{1}$/) {
+    warn "Invalid RAPI_PROXY_HUB_DEBUG_LEVEL '$lvl' - should be number between 0 and 3";
+    return ()
+  }
+  
+  return () unless ($lvl > 0);
+  return join('','-',('v' x $lvl))
+}
 
 sub _get_ssh_cmd {
   my @args = @_;
@@ -123,8 +136,16 @@ sub _fork_remote_ssh_tunnel {
   my $eg = "'<BIND_PORT>:<HOSTNAME>:<PORT>'";
   
   my ($local_port,$host_spec,$remote_port) = split(/\:/,$arg);
+  my ($r_host,$r_port) = split(/\~/,$local_port,2);
+  if($r_port) {
+    $r_host ||= '*';
+    $local_port = $r_port if ($r_host eq '*' || &_valid_host($r_host));
+  }
+  else {
+    $r_host = undef;
+  }
   die "'$arg' is not a valid port/proxy ($eg) argument\n" unless (
-    &_valid_port($local_port) && &_valid_port($remote_port)
+    &_valid_port($local_port) && &_valid_port($remote_port) 
   );
 
   # read in once per run:
@@ -146,11 +167,14 @@ sub _fork_remote_ssh_tunnel {
   my ($user,$host) = split(/\@/,$server,2);
   die "bad remote ssh host '$host' (for '$host_spec')" if ($host && ! &_valid_host($host));
   
+  my @tun = $r_host
+    ? ('-R', join(':', $r_host, $r_port    , $farhost, $remote_port))
+    : ('-L', join(':', '*'    , $local_port, $farhost, $remote_port));
+  
   my @cmd = (
-    'ssh','-p', $port, ($ENV{DEBUG} ? ('-vv') : ()),
+    'ssh','-p', $port, ( &_get_dash_v_arg ),
     ( map { ('-i', $_) } @$client_ids ),
-    '-L', join(':','*',$local_port,$farhost,$remote_port),'-N',
-    join('@',$user,$host)
+    @tun, '-N', join('@',$user,$host)
   );
 
   fork || &_loop_fork_exec(\@cmd,2); 
